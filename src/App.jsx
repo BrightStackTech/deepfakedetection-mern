@@ -10,7 +10,7 @@ import VideoUpload from "./prediction.jsx";
 import Result from "./components/Result.jsx";
 import ImagePredict from "./imagePrediction.jsx";
 import Confirmation from './components/Confirmation.jsx';
-import Settings from './components/Settings/settings.jsx';
+import Settings from './components/Settings/Settings.jsx';
 import ChangePassword from "./components/ChangePassword/ChangePassword.jsx";
 import ResetPassword from "./components/ResetPassword/ResetPassword.jsx";
 import AboutUs from "./components/AboutUs/aboutus.jsx";
