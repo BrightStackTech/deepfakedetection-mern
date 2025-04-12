@@ -18,9 +18,18 @@ function Home() {
 
   useEffect(() => {
     const fetchUserDetails = async () => {
-      const userDetails = await getUserDetails();
-      if (userDetails) setUser(userDetails);
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_SERVER_URL}/api/getUserDetails`,
+          { withCredentials: true } // Include cookies
+        );
+        setUser(response.data);
+      } catch (error) {
+        console.error("Error fetching user details:", error);
+        window.location.href = "/login"; // Redirect to login if unauthorized
+      }
     };
+
     fetchUserDetails();
   }, []);
 
