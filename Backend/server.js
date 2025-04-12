@@ -165,10 +165,11 @@ app.get("/home", isLoggedin, (req, res) => {
 });
 
 function isLoggedin(req, res, next) {
+  console.log("Authenticated User:", req.user); // Log the user session
   if (req.isAuthenticated()) {
     return next();
   }
-
+  console.log("User not authenticated");
   res.redirect("/login");
 }
 
