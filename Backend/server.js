@@ -58,8 +58,10 @@ app.use((res, req, next) => {
 });
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
-    credentials: true, // If using cookies for authentication
+    origin: process.env.CLIENT_URL, // Allow requests from your Vercel frontend
+    credentials: true, // Allow cookies and credentials
+    methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
+    allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
   })
 );
 
