@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getUserDetails } from "../../APIs/userDetails";
+import axios from "axios";
 import Navbar from "../Navbar/navbar2";
 import { FileUp, FileChartPie, Target, Search } from "lucide-react";
 import { MdOutlineDeleteSweep } from "react-icons/md";
@@ -19,14 +20,15 @@ function Home() {
   useEffect(() => {
     const fetchUserDetails = async () => {
       try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_SERVER_URL}/api/getUserDetails`,
-          { withCredentials: true } // Include cookies
-        );
-        setUser(response.data);
+        const userData = await getUserDetails();
+        if (userData) {
+          setUser(userData);
+        } else {
+          window.location.href = "/login";
+        }
       } catch (error) {
         console.error("Error fetching user details:", error);
-        window.location.href = "/login"; // Redirect to login if unauthorized
+        window.location.href = "/login";
       }
     };
 
