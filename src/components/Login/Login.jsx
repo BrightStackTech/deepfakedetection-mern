@@ -59,17 +59,24 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      console.log("Sending login request to:", import.meta.env.VITE_SERVER_URL);
       const response = await axios.post(
         `${import.meta.env.VITE_SERVER_URL}/api/login`,
         { email, password },
-        { withCredentials: true }
+        { 
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
       );
+      console.log("Login response:", response);
       toast.success(response.data.message, { position: "top-right" });
       setTimeout(() => {
         window.location.href = "/home";
       }, 3000);
     } catch (error) {
-      console.error(error);
+      console.error("Login error:", error);
       toast.error("Invalid email or password. Please try again.");
     }
   };
