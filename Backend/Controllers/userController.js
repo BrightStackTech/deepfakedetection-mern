@@ -47,6 +47,7 @@ exports.getUserMedia = async (req, res) => {
   };
 
 exports.deleteMedia = async (req, res) => {
+  console.log("Delete Media Auth Status:", req.isAuthenticated(), req.user);
   if (!req.isAuthenticated()) {
     return res.status(401).json({ error: "User not authenticated" });
   }
