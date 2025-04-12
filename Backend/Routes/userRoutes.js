@@ -21,6 +21,7 @@ router.use(async (req, res, next) => {
 
 // ... existing routes below:
 router.get('/getUserDetails', (req, res) => {
+  console.log("GET User Details - Auth Status:", req.isAuthenticated(), req.user ? req.user._id : null);
   if (req.isAuthenticated()) {
     const { username, email, profilePicture } = req.user;
     res.json({ username, email, profilePicture });
