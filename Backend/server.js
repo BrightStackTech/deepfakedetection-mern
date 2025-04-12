@@ -58,7 +58,7 @@ app.use((res, req, next) => {
 });
 app.use(
   cors({
-    origin: `${process.env.CLIENT_URL}`,
+    origin: process.env.CLIENT_URL,
     credentials: true, // If using cookies for authentication
   })
 );
