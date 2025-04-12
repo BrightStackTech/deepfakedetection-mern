@@ -4,14 +4,21 @@ import numpy as np
 import cv2
 from tensorflow.keras.models import load_model
 import os
+from dotenv import load_dotenv 
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
 port = int(os.getenv("PORT", 8081))
  
-# Load the trained deepfake model
-model_path = r"C:\Users\Vasaikar Yog\Downloads\deepfake_xception_model_with_landmarks.h5"
+# Load the trained deepfake model path from .env
+model_path = os.getenv("IMAGE_MODEL_PATH")
+
+if not model_path:
+    raise ValueError("IMAGE_MODEL_PATH is not set in the .env file")
 
 model = load_model(model_path)
 

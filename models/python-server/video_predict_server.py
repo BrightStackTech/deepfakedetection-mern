@@ -9,6 +9,7 @@ import mediapipe as mp
 from transformers import SwinModel
 from flask import Flask, request, jsonify
 import os
+from dotenv import load_dotenv 
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -57,8 +58,12 @@ class DeepfakeLSTM(nn.Module):
         lstm_out = self.fc(lstm_out[:, -1, :])
         return lstm_out
 
-# Load trained model
-model_path = r"C:\Users\Vasaikar Yog\Downloads\deepfakevi.pth"  # Update with actual model path
+# Load the trained deepfake model path from .env
+model_path = os.getenv("VIDEO_MODEL_PATH")
+
+if not model_path:
+    raise ValueError("VIDEO_MODEL_PATH is not set in the .env file")
+
 model = torch.load(model_path, map_location=device, weights_only=False)
 model = model.to(device)
 model.eval()
