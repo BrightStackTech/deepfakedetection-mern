@@ -40,8 +40,8 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: true,
+      sameSite: "none",
     },
     store: MongoStore.create({
       mongoUrl: mongoURI,
@@ -158,6 +158,7 @@ app.get(
 );
 
 app.get("/home", isLoggedin, (req, res) => {
+  console.log("Authenticated User:", req.user); 
   res.send("Welcome to DeepTrace");
 });
 
