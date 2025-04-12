@@ -10,6 +10,7 @@ const MongoStore = require("connect-mongo");
 require('dotenv').config();
 const userRoutes = require("./Routes/userRoutes");
 const authRoutes = require("./Routes/authRoutes");
+// const testRoutes = require("./test-deployment");
 const path = require('path');
 
 const mongoURI = process.env.MONGO_URI;
@@ -40,8 +41,9 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'none',
+      maxAge: 24 * 60 * 60 * 1000
     },
     store: MongoStore.create({
       mongoUrl: mongoURI,
@@ -55,21 +57,21 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", `${process.env.CLIENT_URL}`);
+  res.header("Access-Control-Allow-Origin", process.env.CLIENT_URL);
   res.header("Access-Control-Allow-Credentials", "true");
   res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE");
-  res.header("Access-Control-Allow-Headers", "Content-Type");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
   next();
 });
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL, // Allow requests from your Vercel frontend
-    credentials: true, // Allow cookies and credentials
-    methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
-    allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
+    origin: process.env.CLIENT_URL,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-
 
 passport.serializeUser((user, done) => {
   console.log("Serialized User: ", user);
@@ -163,6 +165,7 @@ app.get("/logout", (req, res) => {
 
 app.use("/api", userRoutes); 
 app.use("/api", authRoutes);
+// app.use("/api", testRoutes);
 
 // app.post("/metadata-update", (req, res) => {
 //   const filePath = path.resolve(__dirname, req.body.filename);
