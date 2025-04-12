@@ -40,8 +40,8 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
+      secure: false,
+      sameSite: "lax",
     },
     store: MongoStore.create({
       mongoUrl: mongoURI,
@@ -49,7 +49,12 @@ app.use(
     }),
   })
 );
-app.use((res, req, next) => {
+
+// Initialize passport before any routes
+app.use(passport.initialize());
+app.use(passport.session());
+
+app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", `${process.env.CLIENT_URL}`);
   res.header("Access-Control-Allow-Credentials", "true");
   res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE");
@@ -92,7 +97,7 @@ passport.use(
               const email = profile.emails[0].value;
               let user = await User.findOne({ email });
               if (user) {
-                  // User exists – if no googleId then already registered using email/password
+                  // User exists – if no googleId then already registered using email/password
                   if (!user.googleId) {
                       return done(null, false, {
                           message:
@@ -120,6 +125,7 @@ passport.use(
   )
 );
 
+// Google authentication routes
 app.get(
   "/auth/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
@@ -131,36 +137,14 @@ app.get(
       failureRedirect:
           `${process.env.CLIENT_URL}/login?error=the%20entered%20email%20has%20signed%20up%20using%20different%20sign%20up%20method`,
   }),
-  (req,res) => {
+  (req, res) => {
+      // Log the authenticated user
+      console.log("authenticated User: ", req.user);
       res.redirect(`${process.env.CLIENT_URL}/home`);
   }
 );
 
-app.use(passport.initialize());
-app.use(passport.session());
-
-// redirect user to google for authentication
-app.get(
-  "/auth/google",
-  passport.authenticate("google", {
-    scope: ["profile", "email"],
-  })
-);
-
-// google callback after authentication
-app.get(
-  "/auth/google/callback",
-  passport.authenticate("google", {
-    failureRedirect: `${process.env.CLIENT_URL}/login`,
-  }),
-  (req, res) => {
-    console.log("authenticated User: ", req.user);
-    res.redirect(`${process.env.CLIENT_URL}/home`);
-  }
-);
-
 app.get("/home", isLoggedin, (req, res) => {
-  console.log("Authenticated User:", req.user); 
   res.send("Welcome to DeepTrace");
 });
 
