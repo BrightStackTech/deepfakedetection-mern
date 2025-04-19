@@ -10,7 +10,7 @@ const MongoStore = require("connect-mongo");
 require('dotenv').config();
 const userRoutes = require("./Routes/userRoutes");
 const authRoutes = require("./Routes/authRoutes");
-// const testRoutes = require("./test-deployment");
+const testRoutes = require("./test-deployment");
 const path = require('path');
 
 const mongoURI = process.env.MONGO_URI;
@@ -30,6 +30,14 @@ mongoose
 const app = express();
 const port = process.env.PORT || 5000;
 
+// Force NODE_ENV to production on Render
+if (process.env.RENDER) {
+  process.env.NODE_ENV = 'production';
+}
+
+console.log('Environment:', process.env.NODE_ENV);
+console.log('Client URL:', process.env.CLIENT_URL);
+
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
@@ -42,12 +50,14 @@ app.use(
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'none',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 24 * 60 * 60 * 1000
     },
     store: MongoStore.create({
       mongoUrl: mongoURI,
       collectionName: "sessions",
+      ttl: 24 * 60 * 60, // 1 day
+      autoRemove: 'native'
     }),
   })
 );
@@ -56,22 +66,31 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", process.env.CLIENT_URL);
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  next();
-});
-
 app.use(
   cors({
     origin: process.env.CLIENT_URL,
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   })
 );
+
+app.get('/api/test-cookies', (req, res) => {
+  // Set a test cookie
+  res.cookie('testCookie', 'cookieValue', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+  });
+  res.json({
+    message: 'Cookie set',
+    env: process.env.NODE_ENV,
+    clientUrl: process.env.CLIENT_URL
+  });
+});
+
 
 passport.serializeUser((user, done) => {
   console.log("Serialized User: ", user);
@@ -89,41 +108,41 @@ passport.deserializeUser((id, done) => {
 
 passport.use(
   new GoogleStrategy(
-      {
-          clientID: process.env.GOOGLE_CLIENT_ID,
-          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-          callbackURL: "/auth/google/callback",
-      },
-      async (accessToken, refreshToken, profile, done) => {
-          try {
-              const email = profile.emails[0].value;
-              let user = await User.findOne({ email });
-              if (user) {
-                  // User exists – if no googleId then already registered using email/password
-                  if (!user.googleId) {
-                      return done(null, false, {
-                          message:
-                              "the entered email has signed up using different sign up method",
-                      });
-                  }
-                  return done(null, user);
-              } else {
-                  // Create a new user with Google
-                  let username = profile.displayName.replace(/\s+/g, "_").toLowerCase();
-                  const newUser = {
-                      googleId: profile.id,
-                      username,
-                      email,
-                      profilePicture: profile.photos[0].value,
-                      isVerified: true,
-                  };
-                  user = await User.create(newUser);
-                  return done(null, user);
-              }
-          } catch (err) {
-              return done(err);
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "/auth/google/callback",
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        const email = profile.emails[0].value;
+        let user = await User.findOne({ email });
+        if (user) {
+          // User exists – if no googleId then already registered using email/password
+          if (!user.googleId) {
+            return done(null, false, {
+              message:
+                "the entered email has signed up using different sign up method",
+            });
           }
+          return done(null, user);
+        } else {
+          // Create a new user with Google
+          let username = profile.displayName.replace(/\s+/g, "_").toLowerCase();
+          const newUser = {
+            googleId: profile.id,
+            username,
+            email,
+            profilePicture: profile.photos[0].value,
+            isVerified: true,
+          };
+          user = await User.create(newUser);
+          return done(null, user);
+        }
+      } catch (err) {
+        return done(err);
       }
+    }
   )
 );
 
@@ -136,13 +155,13 @@ app.get(
 app.get(
   "/auth/google/callback",
   passport.authenticate("google", {
-      failureRedirect:
-          `${process.env.CLIENT_URL}/login?error=the%20entered%20email%20has%20signed%20up%20using%20different%20sign%20up%20method`,
+    failureRedirect:
+      `${process.env.CLIENT_URL}/login?error=the%20entered%20email%20has%20signed%20up%20using%20different%20sign%20up%20method`,
   }),
   (req, res) => {
-      // Log the authenticated user
-      console.log("authenticated User: ", req.user);
-      res.redirect(`${process.env.CLIENT_URL}/home`);
+    // Log the authenticated user
+    console.log("authenticated User: ", req.user);
+    res.redirect(`${process.env.CLIENT_URL}/home`);
   }
 );
 
@@ -163,9 +182,9 @@ app.get("/logout", (req, res) => {
   req.logout(() => res.redirect(`${process.env.CLIENT_URL}/`));
 });
 
-app.use("/api", userRoutes); 
+app.use("/api", userRoutes);
 app.use("/api", authRoutes);
-// app.use("/api", testRoutes);
+app.use("/api", testRoutes);
 
 // app.post("/metadata-update", (req, res) => {
 //   const filePath = path.resolve(__dirname, req.body.filename);
