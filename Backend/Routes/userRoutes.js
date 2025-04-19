@@ -1,10 +1,8 @@
 const express = require('express');
 const passport = require('passport');
 const User = require('../Models/user'); // need to require the User model
-const { updateUserProfile, checkUsername } = require('../Controllers/userController');
+const { updateUserProfile, checkUsername, addMediaUrl, getUserMedia, deleteMedia } = require('../Controllers/userController');
 const router = express.Router();
-const { checkEmail } = require("../Controllers/authController");
-const { requestPasswordReset, resetPassword } = require("../Controllers/authController");
 
 // Custom middleware to manually populate req.user if not already set
 router.use(async (req, res, next) => {
@@ -19,26 +17,22 @@ router.use(async (req, res, next) => {
   next();
 });
 
-// ... existing routes below:
+// User details and profile management
 router.get('/getUserDetails', (req, res) => {
   console.log("GET User Details - Auth Status:", req.isAuthenticated(), req.user ? req.user._id : null);
   if (req.isAuthenticated()) {
     const { username, email, profilePicture } = req.user;
     res.json({ username, email, profilePicture });
   } else {
-    res.send(null);
+    res.status(401).json({ error: "User not authenticated" });
   }
 });
 
-router.post('/addMediaUrl', passport.authenticate('session'), require('../Controllers/userController').addMediaUrl);
-router.get('/getMedia', passport.authenticate('session'), require('../Controllers/userController').getUserMedia);
-// Remove passport.authenticate('session') for DELETE to allow the custom middleware to work
-router.delete('/deleteMedia', require('../Controllers/userController').deleteMedia);
+// Media management routes
+router.post('/addMediaUrl', passport.authenticate('session'), addMediaUrl);
+router.get('/getMedia', passport.authenticate('session'), getUserMedia);
+router.delete('/deleteMedia', deleteMedia);
 router.put('/updateUserProfile', passport.authenticate('session'), updateUserProfile);
 router.get('/checkUsername', checkUsername);
-router.get("/checkEmail", checkEmail);
-router.post("/requestPasswordReset", requestPasswordReset);
-router.post("/resetPassword", resetPassword);
-
 
 module.exports = router;
