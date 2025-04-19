@@ -63,21 +63,36 @@ function Login() {
       const response = await axios.post(
         `${import.meta.env.VITE_SERVER_URL}/api/login`,
         { email, password },
-        { 
+        {
           withCredentials: true,
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
           }
         }
       );
       console.log("Login response:", response);
+
+      // Check for cookies after login
+      console.log("Cookies after login:", document.cookie);
+
       toast.success(response.data.message, { position: "top-right" });
-      setTimeout(() => {
-        window.location.href = "/home";
-      }, 3000);
+
+      // Store user in local storage
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+
+      // Verify login was successful before redirect
+      if (response.status === 200) {
+        // Wait a bit before redirect to ensure cookie is set
+        setTimeout(() => {
+          window.location.href = "/home";
+        }, 1500);
+      }
     } catch (error) {
       console.error("Login error:", error);
-      toast.error("Invalid email or password. Please try again.");
+      toast.error(error.response?.data?.error || "Invalid email or password. Please try again.");
     }
   };
 
@@ -163,9 +178,8 @@ function Login() {
             <button
               type="submit"
               disabled={isSubmitDisabled}
-              className={`w-full px-4 py-2.5 rounded-full bg-[#f1f3f5] hover:bg-black text-md text-gray-900 hover:text-white font-semibold ${
-                isSubmitDisabled ? "opacity-50 cursor-not-allowed" : ""
-              } transition`}
+              className={`w-full px-4 py-2.5 rounded-full bg-[#f1f3f5] hover:bg-black text-md text-gray-900 hover:text-white font-semibold ${isSubmitDisabled ? "opacity-50 cursor-not-allowed" : ""
+                } transition`}
             >
               Log In
             </button>
