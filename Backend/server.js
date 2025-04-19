@@ -1,5 +1,5 @@
+// server.js for production deployment
 const express = require("express");
-const { exec } = require("child_process");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const session = require("express-session");
@@ -10,7 +10,6 @@ const MongoStore = require("connect-mongo");
 require('dotenv').config();
 const userRoutes = require("./Routes/userRoutes");
 const authRoutes = require("./Routes/authRoutes");
-const testRoutes = require("./test-deployment");
 const path = require('path');
 
 const mongoURI = process.env.MONGO_URI;
@@ -77,6 +76,7 @@ app.use(
   })
 );
 
+// Test endpoints for debugging
 app.get('/api/test-cookies', (req, res) => {
   // Set a test cookie
   res.cookie('testCookie', 'cookieValue', {
@@ -91,6 +91,39 @@ app.get('/api/test-cookies', (req, res) => {
   });
 });
 
+app.get('/api/test-session', (req, res) => {
+  if (!req.session.views) {
+    req.session.views = 1;
+  } else {
+    req.session.views++;
+  }
+  
+  res.json({ 
+    sessionWorks: true, 
+    views: req.session.views,
+    sessionID: req.sessionID,
+    cookies: req.headers.cookie || 'No cookies found'
+  });
+});
+
+app.get('/api/test-auth', (req, res) => {
+  console.log("Auth test request received");
+  console.log("isAuthenticated:", req.isAuthenticated());
+  console.log("User:", req.user);
+  
+  if (req.isAuthenticated()) {
+    res.json({ 
+      authenticated: true, 
+      user: req.user 
+    });
+  } else {
+    res.json({ 
+      authenticated: false, 
+      session: req.session ? 'exists' : 'missing',
+      passport: req.session && req.session.passport ? 'exists' : 'missing'
+    });
+  }
+});
 
 passport.serializeUser((user, done) => {
   console.log("Serialized User: ", user);
@@ -184,34 +217,11 @@ app.get("/logout", (req, res) => {
 
 app.use("/api", userRoutes);
 app.use("/api", authRoutes);
-app.use("/api", testRoutes);
 
-// app.post("/metadata-update", (req, res) => {
-//   const filePath = path.resolve(__dirname, req.body.filename);
-//   const result = req.body.result;
-//   const accuracy = req.body.accuracy;
-
-//   const command = `cd "C:/Users/Kartik/Downloads/exiftool-12.97_64/exiftool-12.97_64" && exiftool -Title="This video is ${result}" -Description="Deepfake Detection Prediction: ${accuracy}%" ${filePath}`;
-
-//   exec(command, (error, stdout, stderr) => {
-//     if (error) {
-//       console.error(`Error: ${error.message}`);
-//       return res.status(500).send('Error executing ExifTool');
-//     }
-//     if (stderr) {
-//       console.error(`Stderr: ${stderr}`);
-//       return res.status(500).send('ExifTool encountered an error');
-//     }
-//     res.send(`Metadata updated successfully! Output: ${stdout}`);
-//   });
-
-//   // console.log("Metadata updated:", req.body);
-//   // res.send("Metadata updated successfully");
-// });
-
-// app.get('/', (req, res) => {
-//     res.send('Hello World!');
-// });
+// Add a root route for testing
+app.get('/', (req, res) => {
+  res.send('DeepTrace API is running');
+});
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
